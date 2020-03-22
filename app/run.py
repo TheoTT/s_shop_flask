@@ -3,10 +3,12 @@ import logging
 
 from flask import Flask, request
 from flask.helpers import get_env
+from flask_cors import CORS
 
 from hobbit_core.err_handler import ErrHandler
 
-from app.exts import db, migrate, ma, hobbit
+from app.exts import db, migrate, ma, hobbit, cors, jwt
+#from app.cmds import cmd_list
 
 
 def register_extensions(app):
@@ -14,6 +16,8 @@ def register_extensions(app):
     migrate.init_app(app, db)
     ma.init_app(app)
     hobbit.init_app(app, db)
+    cors.init_app(app)
+    jwt.init_app(app)
 
 
 def register_blueprints(app):
@@ -29,18 +33,20 @@ def register_error_handler(app):
 
 
 def register_cmds(app):
-    pass
+    for cmd in cmd_list:
+        app.cli.add_command(cmd)
 
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object('app.configs.{}'.format(get_env()))
+    # cors = CORS(app, resources=r"/*", origins=r"*", )
 
     with app.app_context():
         register_extensions(app)
         register_blueprints(app)
+        # register_cmds(app)
     register_error_handler(app)
-    register_cmds(app)
 
     @app.before_request
     def log_request_info():
