@@ -9,7 +9,7 @@ from hobbit_core.utils import use_kwargs
 from hobbit_core.db import transaction
 from hobbit_core.pagination import PageParams, pagination
 
-from app.models import Menu  # NOQA
+from app.models import Menu, SubMenu  # NOQA
 from app import schemas  # NOQA
 from app.exts import db
 
@@ -20,7 +20,6 @@ bp = Blueprint('menu', __name__)
 @use_kwargs(PageParams)
 @jwt_required()
 def list(page, page_size, order_by):
-    print(dir(Menu))
     qexp = Menu.query
     paged_ret = pagination(Menu, page, page_size, order_by, query_exp=qexp)
     return jsonify(schemas.paged_menu_schemas.dump(paged_ret))
@@ -61,9 +60,10 @@ def update(auth_name, path, child_id, pk):
 
     menu.auth_name = auth_name
     menu.path = path
-    child = Menu.query.filter(Menu.id == child_id).one()
+    child =SubMenu.query.filter(SubMenu.id == child_id).one()
     if child:
-        menu.sub_menu.append(child)
+        print(f'children: {menu.children}')
+        menu.children.append(child)
     db.session.flush()
 
     return jsonify(schemas.menu_schema.dump(menu)), 200
@@ -78,5 +78,66 @@ def delete(pk):
         return ValidationErrorResult(
             message='ID 为{pk} Menu不存在')
     db.session.delete(menu)
+    db.session.flush()
+    return '', 204
+
+@bp.route('/sub_menus/', methods=['GET'])
+@use_kwargs(PageParams)
+@jwt_required()
+def sub_list(page, page_size, order_by):
+    qexp = SubMenu.query
+    paged_ret = pagination(SubMenu, page, page_size, order_by, query_exp=qexp)
+    return jsonify(schemas.paged_sub_menu_schemas.dump(paged_ret))
+
+
+@bp.route('/sub_menus/', methods=['POST'])
+@use_kwargs(schemas.sub_menu_create_schema)
+@jwt_required()
+@transaction(db.session)
+def sub_create(auth_name, path):
+    if SubMenu.query.filter(or_(
+            SubMenu.auth_name == auth_name)).first():
+        return ValidationErrorResult(message='SubMenu已存在')
+    sub_menu = SubMenu(auth_name=auth_name, path=path)
+    db.session.add(sub_menu)
+    db.session.flush()
+
+    return jsonify(schemas.sub_menu_schema.dump(sub_menu)), 201
+
+
+@bp.route('/sub_menus/<int:pk>/', methods=['GET'])
+@jwt_required()
+def sub_retrieve(pk):
+    sub_menu = SubMenu.query.filter(SubMenu.id == pk).one()
+    return jsonify(schemas.sub_menu_schema.dump(sub_menu)), 200
+
+
+@bp.route('/menus/<int:pk>/', methods=['PUT'])
+@use_kwargs(schemas.sub_menu_create_schema)
+@jwt_required()
+@transaction(db.session)
+def sub_update(auth_name, path, pk):
+
+    sub_menu = SubMenu.query.filter(SubMenu.id == pk).one()
+    if not sub_menu:
+        return ValidationErrorResult(
+            message='ID 为{pk} 菜单不存在')
+
+    sub_menu.auth_name = auth_name
+    sub_menu.path = path
+    db.session.flush()
+
+    return jsonify(schemas.sub_menu_schema.dump(menu)), 200
+
+
+@bp.route('/sub_menus/<int:pk>/', methods=['DELETE'])
+@jwt_required()
+@transaction(db.session)
+def sub_delete(pk):
+    sub_menu = SubMenu.query.filter(SubMenu.id == pk).one()
+    if not sub_menu:
+        return ValidationErrorResult(
+            message='ID 为{pk} SubMenu不存在')
+    db.session.delete(sub_menu)
     db.session.flush()
     return '', 204

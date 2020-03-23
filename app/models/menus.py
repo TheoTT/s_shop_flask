@@ -50,33 +50,40 @@ from app.exts import bcrypt, db
 #     def __init__(self, auth_name, path, **kwargs):
 #         db.Model.__init__(self, auth_name=auth_name, path=path, **kwargs)
 
-# class Menu(BaseModel):
-#     __tablename__ = 'menus'
-#     exclude_columns = ['created_at', 'updated_at']
-#     auth_name = Column(db.String(32), nullable=False, index=True)
-#     path = Column(db.String(256), nullable=False)
-#     level = Column(db.Integer, nullable=True)
-#     children = relationship("SubMenu", backref='parent')
-
-#     def __init__(self, auth_name, path, **kwargs):
-#         db.Model.__init__(self, auth_name=auth_name, path=path, **kwargs)
-
-
-# class SubMenu(BaseModel):
-#     __tablename__ = 'submenus'
-#     exclude_columns = ['created_at', 'updated_at']
-#     parent_id = Column(db.Integer, db.ForeignKey('menus.id'))
-
-class Menu(db.Model):
+class Menu(BaseModel):
     __tablename__ = 'menus'
-    id = db.Column(db.Integer, primary_key = True)
     exclude_columns = ['created_at', 'updated_at']
     auth_name = Column(db.String(32), nullable=False, index=True)
     path = Column(db.String(256), nullable=False)
     level = Column(db.Integer, nullable=True)
-    parent_id = db.Column(db.Integer, db.ForeignKey('menus.id'))
-    sub_menu = db.relationship('Menu', back_populates='parent_menu')
-    parent_menu = db.relationship('Menu', back_populates='sub_menu', remote_side=[id, auth_name, path])
+    # children = relationship("SubMenu", backref='parent')
 
     def __init__(self, auth_name, path, **kwargs):
         db.Model.__init__(self, auth_name=auth_name, path=path, **kwargs)
+
+
+class SubMenu(BaseModel):
+    __tablename__ = 'submenus'
+    exclude_columns = ['created_at', 'updated_at']
+    auth_name = Column(db.String(32), nullable=False, index=True)
+    path = Column(db.String(256), nullable=False)
+    level = Column(db.Integer, nullable=True)
+    parent_id = Column(db.Integer, db.ForeignKey('menus.id'))
+    parent = relationship('Menu', backref=db.backref('children', order_by=auth_name))
+
+    def __init__(self, auth_name, path, **kwargs):
+        db.Model.__init__(self, auth_name=auth_name, path=path, **kwargs)
+
+# class Menu(db.Model):
+#     __tablename__ = 'menus'
+#     id = db.Column(db.Integer, primary_key = True)
+#     exclude_columns = ['created_at', 'updated_at']
+#     auth_name = Column(db.String(32), nullable=False, index=True)
+#     path = Column(db.String(256), nullable=False)
+#     level = Column(db.Integer, nullable=True)
+#     parent_id = db.Column(db.Integer, db.ForeignKey('menus.id'))
+#     sub_menu = db.relationship('Menu', back_populates='parent_menu')
+#     parent_menu = db.relationship('Menu', back_populates='sub_menu', remote_side=[id, auth_name, path])
+
+#     def __init__(self, auth_name, path, **kwargs):
+#         db.Model.__init__(self, auth_name=auth_name, path=path, **kwargs)
