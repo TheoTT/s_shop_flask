@@ -12,7 +12,7 @@ user = 'shop'
 passwd = 'shopadmin'
 db = 'shopdb'
 
-SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{user}:{passwd}@127.0.0.1:6606/{db}'
+SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{user}:{passwd}@10.10.10.105:6606/{db}'
 
 JWT_AUTH_USERNAME_KEY = 'username'
 JWT_AUTH_PASSWORD_KEY = 'password'

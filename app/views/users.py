@@ -1,3 +1,5 @@
+import logging
+
 from flask import Blueprint, jsonify, request
 from flask_jwt import jwt_required
 from flask_cors import cross_origin
@@ -9,7 +11,7 @@ from hobbit_core.utils import use_kwargs
 from hobbit_core.db import transaction
 from hobbit_core.pagination import PageParams, pagination
 
-from app.models import User  # NOQA
+from app.models import User, Role  # NOQA
 from app import schemas  # NOQA
 from app.exts import db
 
@@ -44,11 +46,11 @@ def list(page, page_size, order_by):
 @use_kwargs(schemas.user_create_schema)
 # @jwt_required()
 @transaction(db.session)
-def create(username, password):
+def create(username, password, email):
     if User.s_query().filter(or_(
-            User.username == username)).first():
+            User.username == username, User.email == email)).first():
         return ValidationErrorResult(message='用户名或者邮箱已存在')
-    user = User(username=username, password=password)
+    user = User(username=username, password=password, email=email)
     db.session.add(user)
     db.session.flush()
 
@@ -63,22 +65,38 @@ def retrieve(pk):
 
 
 @bp.route('/users/<int:pk>/', methods=['PUT'])
-@use_kwargs(schemas.user_create_schema)
+@use_kwargs(schemas.user_mod_schema)
 @jwt_required()
 @transaction(db.session)
-def update(username, password, email, pk):
-
-    user = User.s_query().filter(User.id == pk).one()
+def update(username, email, pk):
+    # logging.error(f"'status'*10: {status}, {type(status)}")
+    user = User.query.filter(User.id == pk).one()
     if not user:
         return ValidationErrorResult(
             message='ID 为{pk} 用户不存在')
 
-    user.set_password(password)
     user.username = username
     user.email = email
     db.session.flush()
+    return jsonify(schemas.user_schema.dump(user)), 200 
 
-    return jsonify(schemas.user_schema.dump(user)), 200
+
+@bp.route('/users/<int:pk>/role/', methods=['PUT'])
+@use_kwargs({'role_id': fields.Integer(required=True)})
+@jwt_required()
+@transaction(db.session)
+def update_role(role_id, pk):
+    # logging.error(f"'status'*10: {status}, {type(status)}")
+    user = User.query.filter(User.id == pk).one()
+    if not user:
+        return ValidationErrorResult(
+            message='ID 为{pk} 用户不存在')
+
+    role = Role.query.filter(Role.id == role_id).one()
+    if role:
+        user.role = role
+    db.session.flush()
+    return jsonify(schemas.user_schema.dump(user)), 200 
 
 
 @bp.route('/users/<int:pk>/', methods=['DELETE'])
@@ -91,3 +109,19 @@ def delete(pk):
             message='ID 为{pk} 用户不存在')
     user.del_flag = user.id
     return '', 204
+
+
+@bp.route('/users/<int:pk>/status/', methods=['PUT'])
+# @use_kwargs({'status': fields.Number(required=True, validate=lambda x: x in [True, False])})
+@use_kwargs({'status': fields.Boolean(required=True)})
+@jwt_required()
+@transaction(db.session)
+def status(status, pk):
+    user = User.s_query().filter(User.id == pk).one()
+    if not user:
+        return ValidationErrorResult(
+            message='ID 为{pk} 用户不存在')
+    user.status = status
+    db.session.flush()
+
+    return jsonify(schemas.user_schema.dump(user)), 200

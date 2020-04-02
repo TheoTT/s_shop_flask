@@ -9,7 +9,7 @@ RUN apt-get update --fix-missing && apt-get install -y \
     zip sshpass
 
 RUN pip install --upgrade pip -i https://pypi.doubanio.com/simple
-RUN pip install flake8 pytest pytest-cov gunicorn gevent
+RUN pip install flake8 pytest pytest-cov gunicorn gevent -i https://pypi.doubanio.com/simple
 
 RUN mkdir /app
 WORKDIR /app
@@ -20,4 +20,4 @@ COPY ./requirements.txt /app
 
 # RUN pip install -i https://pypi.doubanio.com/simple --no-cache-dir pipenv \
 #     && pipenv install --system --deploy --dev
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt -i https://pypi.doubanio.com/simple
