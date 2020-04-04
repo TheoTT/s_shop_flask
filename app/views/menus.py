@@ -37,11 +37,11 @@ def list_aside(page, page_size, order_by):
 @use_kwargs(schemas.menu_create_schema)
 @jwt_required()
 @transaction(db.session)
-def create(auth_name, path):
+def create(auth_name, path, level):
     if Menu.query.filter(or_(
             Menu.auth_name == auth_name)).first():
         return ValidationErrorResult(message='Menu已存在')
-    menu = Menu(auth_name=auth_name, path=path)
+    menu = Menu(level=level, auth_name=auth_name, path=path)
     db.session.add(menu)
     db.session.flush()
 
@@ -72,6 +72,24 @@ def update(auth_name, path, parent_id, pk, level):
     parent =Menu.query.filter(Menu.id == parent_id).one()
     if parent and (menu not in parent.children):
         parent.children.append(menu)
+    db.session.flush()
+
+    return jsonify(schemas.menu_schema.dump(menu)), 200
+
+
+@bp.route('/menus/<int:pk>/children/', methods=['PUT'])
+@use_kwargs({'children': fields.List(fields.Integer(), required=True)})
+@jwt_required()
+@transaction(db.session)
+def update_children(children, pk):
+
+    menu = Menu.query.filter(Menu.id == pk).one()
+    if not menu:
+        return ValidationErrorResult(
+            message='ID 为{pk} 菜单不存在')
+    if children:
+        menus = Menu.query.filter(Menu.id.in_(children)).all()
+        menu.children = menus
     db.session.flush()
 
     return jsonify(schemas.menu_schema.dump(menu)), 200
