@@ -2,16 +2,18 @@
 name = "pypi"
 #url = "https://pypi.org/simple"
 url = "https://mirrors.aliyun.com/pypi/simple"
-
 verify_ssl = true
 
 [dev-packages]
+flake8 = "*"
 
 [packages]
 hobbit-core = {extras = ["hobbit", "hobbit_core"],version = "==1.4.3"}
 flask-bcrypt = "*"
 flask-cors = "*"
 flask-apispec = "*"
+flask-jwt = "*"
+pymysql = "*"
 
 [requires]
 python_version = "3.6"

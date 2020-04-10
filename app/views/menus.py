@@ -59,7 +59,7 @@ def retrieve(pk):
 @use_kwargs(schemas.menu_create_schema)
 @jwt_required()
 @transaction(db.session)
-def update(auth_name, path, parent_id, pk, level):
+def update(auth_name, path, pk, level, parent_id=None):
 
     menu = Menu.query.filter(Menu.id == pk).one()
     if not menu:
@@ -69,9 +69,10 @@ def update(auth_name, path, parent_id, pk, level):
     menu.auth_name = auth_name
     menu.path = path
     menu.level = level
-    parent =Menu.query.filter(Menu.id == parent_id).one()
-    if parent and (menu not in parent.children):
-        parent.children.append(menu)
+    if parent_id:
+        parent =Menu.query.filter(Menu.id == parent_id).one()
+        if parent and (menu not in parent.children):
+            parent.children.append(menu)
     db.session.flush()
 
     return jsonify(schemas.menu_schema.dump(menu)), 200

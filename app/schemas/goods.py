@@ -46,15 +46,19 @@ class GoodCreateSchema(ModelSchema):
 class CategorySchema(ModelSchema):
     # category_name = fields.Str(dump_only=True)
     category_name = fields.Str(required=True)
+    category_desc = fields.Str(required=False)
     category_level = fields.Number(required=True)
+    # children = fields.Nested('self', many=True, exclude=['children'])
+    # children_f = fields.Nested('self', many=True, exclude=['children'])
     children = fields.Nested('self', many=True)
+    children_f = fields.Nested('self', many=True)
 
     class Meta:
         model = Good
         strict = True
         fields = (
-            'id', 'created_at', 'updated_at',
-            'category_name', 'category_level', 'children'
+            'id', 'created_at', 'updated_at', 'children_f',
+            'category_name', 'category_level', 'children', 'category_desc'
         )
         load_only = ()
         dump_only = ()
@@ -67,16 +71,18 @@ class PagedCategorySchema(PagedSchema):
 class CategoryCreateSchema(ModelSchema):
     # category_name = fields.Str(dump_only=True)
     category_name = fields.Str(required=True)
+    category_desc = fields.Str(required=False)
     category_level = fields.Number(required=True)
+    parent_id = fields.Number(required=False, default=None)
 
     class Meta(GoodSchema.Meta):
         model = Good
         strict = True
         fields = (
             'id', 'created_at', 'updated_at',
-            'category_name', 'category_level'
+            'category_name', 'category_level', 'category_desc', 'parent_id'
         )
-        dump_only = tuple(set(fields) - {'category_name', 'category_level'})
+        dump_only = tuple(set(fields) - {'category_name', 'category_level', 'category_desc', 'parent_id'})
 
 
 good_schema = GoodSchema()

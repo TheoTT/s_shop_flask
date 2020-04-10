@@ -63,4 +63,3 @@ user_schema = UserSchema(exclude=['token'])
 paged_user_schemas = PagedUserSchema()
 user_create_schema = UserCreateSchema()
 user_mod_schema = UserModSchema()
-
