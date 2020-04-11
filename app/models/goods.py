@@ -34,7 +34,7 @@ class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key = True)
     category_name = Column(db.String(32), nullable=False, index=True)
-    # category_desc = Column(db.String(200), nullable=True)
+    category_desc = Column(db.String(200), nullable=True)
     category_level = Column(db.Integer, nullable=True)
     created_at = Column(db.Date, nullable=True, default=datetime.now)
     updated_at = Column(db.Date, nullable=True, default=datetime.now)

@@ -1,3 +1,5 @@
+import logging
+
 from flask import Blueprint, jsonify, request
 from flask_jwt import jwt_required
 from flask_cors import cross_origin
@@ -112,15 +114,16 @@ def create_category(category_name, category_level, category_desc, parent_id=None
     if Category.query.filter(or_(
             Category.category_name == category_name)).first():
         return ValidationErrorResult(message='Category已存在')
-    # category = Category(
-    #     category_name=category_name, category_level=category_level,
-    #     category_desc=category_desc)
     category = Category(
-        category_name=category_name, category_level=category_level)
+        category_name=category_name, category_level=category_level,
+        category_desc=category_desc)
+    # category = Category(
+    #     category_name=category_name, category_level=category_level)
     if parent_id:
         parent = Category.query.filter_by(id=parent_id).one()
         if parent:
             parent.children.append(category)
+            category.parent_id = parent_id
     db.session.add(category)
     db.session.flush()
 
