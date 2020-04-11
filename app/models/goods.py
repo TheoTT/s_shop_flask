@@ -34,7 +34,7 @@ class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key = True)
     category_name = Column(db.String(32), nullable=False, index=True)
-    category_desc = Column(db.String(200), nullable=True)
+    # category_desc = Column(db.String(200), nullable=True)
     category_level = Column(db.Integer, nullable=True)
     created_at = Column(db.Date, nullable=True, default=datetime.now)
     updated_at = Column(db.Date, nullable=True, default=datetime.now)
@@ -51,8 +51,7 @@ class Category(db.Model):
 
     def __init__(self, category_name, category_level, category_desc, **kwargs):
         db.Model.__init__(
-            self, category_name=category_name, category_level=category_level,
-             category_desc=category_desc, **kwargs)
+            self, category_name=category_name, category_level=category_level, **kwargs)
 
     @property
     def children_f(self, type=2):
@@ -61,7 +60,7 @@ class Category(db.Model):
             return children
 
         categories_1 = self.children
-        logging.error(categories_1)
+        # logging.error(categories_1)
         for category_1 in categories_1:
             if type == 2:
                 item_1 = {}

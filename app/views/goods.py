@@ -112,9 +112,11 @@ def create_category(category_name, category_level, category_desc, parent_id=None
     if Category.query.filter(or_(
             Category.category_name == category_name)).first():
         return ValidationErrorResult(message='Category已存在')
+    # category = Category(
+    #     category_name=category_name, category_level=category_level,
+    #     category_desc=category_desc)
     category = Category(
-        category_name=category_name, category_level=category_level,
-        category_desc=category_desc)
+        category_name=category_name, category_level=category_level)
     if parent_id:
         parent = Category.query.filter_by(id=parent_id).one()
         if parent:
