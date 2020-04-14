@@ -1,5 +1,5 @@
 {
-    "python.pythonPath": "C:\\Users\\lit\\.virtualenvs\\s_shop_flask-PR40zi7n\\Scripts\\python.exe",
+    "python.pythonPath": "/home/t/.local/share/virtualenvs/s_shop_flask-YhKLBTZd/bin/python",
     "python.linting.pylintEnabled": false,
     "python.linting.flake8Enabled": true,
     "python.linting.enabled": true

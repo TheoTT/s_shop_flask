@@ -12,7 +12,7 @@ from hobbit_core.db import transaction
 from hobbit_core.pagination import PageParams, pagination
 
 # from app.models import Menu, SubMenu  # NOQA
-from app.models import Good, Category  # NOQA
+from app.models import Good, Category, Attribute # NOQA
 from app import schemas  # NOQA
 from app.exts import db
 
@@ -184,3 +184,93 @@ def delete_category(pk):
     db.session.delete(category)
     db.session.flush()
     return '', 204
+
+
+@bp.route('/attributes/', methods=['GET'])
+@use_kwargs(PageParams)
+# @use_kwargs({'type': fields.List(fields.Integer(), required=False)})
+# @use_kwargs({'type': fields.Integer(required=False)})
+@jwt_required()
+def list_attribute(page, page_size, order_by):
+    # qexp = Category.query.filter(Category.category_level.in_(range(type)))
+    # qexp = Category.query.filter(Category.category_level==type-1)
+    qexp = Attribute.query
+    paged_ret = pagination(Attribute, page, page_size, order_by, query_exp=qexp)
+    return jsonify(schemas.paged_attribute_schemas.dump(paged_ret))
+
+
+@bp.route('/categories/<int:category_id>/attributes/', methods=['POST'])
+@use_kwargs(schemas.attribute_create_schema)
+@jwt_required()
+@transaction(db.session)
+def create_attribute(attribute_name, attribute_sel, attribute_write, category_id, attribute_values=None):
+    # if Attribute.query.filter(or_(
+    #         Attribute.attribute_name == attribute_name)).first():
+    #     return ValidationErrorResult(message='Attribute已存在')
+    attribute = Attribute(
+        attribute_name=attribute_name, attribute_sel=attribute_sel,
+        attribute_write=attribute_write, attribute_values=attribute_values)
+    # category = Category(
+    #     category_name=category_name, category_level=category_level)
+    if category_id:
+        category = Category.query.filter_by(id=category_id).one()
+        if category:
+            category.attributes.append(attribute)
+            attribute.category_id = category_id
+    db.session.add(attribute)
+    db.session.flush()
+
+    return jsonify(schemas.attribute_schema.dump(attribute)), 201
+
+
+@bp.route('/categories/<int:category_id>/attributes/<int:attribute_id>/', methods=['GET'])
+@jwt_required()
+def retrieve_attributes(category_id, attribute_id):
+    category = Category.query.filter(Category.id == category_id).one()
+    attribute = category.attributes.filter_by(id=attribute_id).one()
+    return jsonify(schemas.attribute_schema.dump(attribute)), 200
+
+
+@bp.route('/attributes/<int:attribute_id>/', methods=['PUT'])
+@jwt_required()
+@use_kwargs(schemas.attribute_create_schema)
+@transaction(db.session)
+def update_attribute(attribute_id, attribute_name, attribute_sel, attribute_write, attribute_values):
+    attribute = Attribute.query.filter(Attribute.id == attribute_id).one()
+    if not attribute:
+        return ValidationErrorResult(
+            message='ID 为{attribute} 属性不存在')
+    attribute.attribute_name = attribute_name
+    attribute.attribute_sel = attribute_sel
+    attribute.attribute_write = attribute_write
+    attribute.attribute_values = attribute_values
+    db.session.flush()
+    return jsonify(schemas.attribute_schema.dump(attribute)), 200
+
+
+@bp.route('/attributes/<int:pk>/', methods=['DELETE'])
+@jwt_required()
+@transaction(db.session)
+def delete_attribute(pk):
+    attribute = Attribute.query.filter(Attribute.id == pk).one()
+    if not attribute:
+        return ValidationErrorResult(
+            message='ID 为{pk} Attribute不存在')
+    db.session.delete(attribute)
+    db.session.flush()
+    return '', 204
+
+
+@bp.route('/categories/<int:pk>/attributes/', methods=['GET'])
+@use_kwargs(PageParams)
+# @use_kwargs({'type': fields.List(fields.Integer(), required=False)})
+@use_kwargs({'attribute_sel': fields.String(required=False)})
+@jwt_required()
+def category_attributes(pk, page, page_size, order_by, attribute_sel=None):
+    category = Category.query.filter_by(id=pk).one()
+    if not category:
+        return ValidationErrorResult(message='ID 为{pk} 分类不存在')
+    qexp = category.attributes.filter(Attribute.attribute_sel == attribute_sel)
+    # qexp = Category.query.filter(Category.category_level.in_(range(type)))
+    paged_ret = pagination(Attribute, page, page_size, order_by, query_exp=qexp)
+    return jsonify(schemas.paged_attribute_schemas.dump(paged_ret))

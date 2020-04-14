@@ -1,7 +1,9 @@
+import logging
+
 from marshmallow import fields
 from hobbit_core.schemas import PagedSchema, ModelSchema
 
-from app.models import Good, Category
+from app.models import Good, Category, Attribute
 
 
 class GoodSchema(ModelSchema):
@@ -51,17 +53,24 @@ class CategorySchema(ModelSchema):
     # children = fields.Nested('self', many=True, exclude=['children'])
     # children_f = fields.Nested('self', many=True, exclude=['children'])
     children = fields.Nested('self', many=True)
+    # TODO: 优化自引用过滤
     children_f = fields.Nested('self', many=True)
+    children_p = fields.Nested('self', many=True)
+    # name = fields.Method('get_children')
 
     class Meta:
-        model = Good
+        model = Category
         strict = True
         fields = (
-            'id', 'created_at', 'updated_at', 'children_f',
+            'id', 'created_at', 'updated_at', 'children_f', 'children_p',
             'category_name', 'category_level', 'children', 'category_desc'
         )
         load_only = ()
         dump_only = ()
+
+    # def get_children(self, obj):
+    #     logging.error((type(obj), dir(obj), obj))
+    #     return obj.children
 
 
 class PagedCategorySchema(PagedSchema):
@@ -85,6 +94,53 @@ class CategoryCreateSchema(ModelSchema):
         dump_only = tuple(set(fields) - {'category_name', 'category_level', 'category_desc', 'parent_id'})
 
 
+class AttributeSchema(ModelSchema):
+    attribute_name = fields.Str(required=True)
+    attribute_sel = fields.Str(required=False)
+    attribute_values = fields.Str(required=False)
+    attribute_write = fields.Str(required=False)
+
+    class Meta:
+        model = Attribute
+        strict = True
+        fields = (
+            'id', 'created_at', 'updated_at', 'attribute_name', 'attribute_sel',
+            'attribute_values', 'attribute_write'
+        )
+        load_only = ()
+        dump_only = ()
+
+    # def get_children(self, obj):
+    #     logging.error((type(obj), dir(obj), obj))
+    #     return obj.children
+
+
+class PagedAttributeSchema(PagedSchema):
+    items = fields.Nested(AttributeSchema, many=True, exclude=[])
+
+
+class AttributeCreateSchema(ModelSchema):
+    attribute_name = fields.Str(required=True)
+    attribute_sel = fields.Str(required=False)
+    attribute_values = fields.Str(required=False)
+    attribute_write = fields.Str(required=False)
+    # category_id = fields.Number(required=False, default=None)
+
+    class Meta(GoodSchema.Meta):
+        model = Attribute
+        strict = True
+        fields = (
+            'id', 'created_at', 'updated_at',
+            'attribute_name', 'attribute_sel',
+            'attribute_values', 'attribute_write'
+        )
+        dump_only = tuple(
+            set(fields) - {
+                'attribute_name', 'attribute_sel',
+                'attribute_values', 'category_id',
+                'attribute_write'})
+
+
 good_schema = GoodSchema()
 paged_good_schemas = PagedGoodSchema()
 good_create_schema = GoodCreateSchema()
@@ -92,3 +148,7 @@ good_create_schema = GoodCreateSchema()
 category_schema = CategorySchema()
 paged_category_schemas = PagedCategorySchema()
 category_create_schema = CategoryCreateSchema()
+
+attribute_schema = AttributeSchema()
+paged_attribute_schemas = PagedAttributeSchema()
+attribute_create_schema = AttributeCreateSchema()
