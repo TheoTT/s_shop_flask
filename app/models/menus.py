@@ -83,6 +83,7 @@ association_table = db.Table('association',
     Column('role_id', db.Integer, db.ForeignKey('roles.id'))
 )
 
+
 class Menu(db.Model):
     __tablename__ = 'menus'
     id = db.Column(db.Integer, primary_key = True)

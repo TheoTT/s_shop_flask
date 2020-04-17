@@ -7,7 +7,7 @@ from flask_cors import CORS
 
 from hobbit_core.err_handler import ErrHandler
 
-from app.exts import db, migrate, ma, hobbit, cors, jwt
+from app.exts import db, migrate, ma, hobbit, cors, jwt, photos, configure_uploads
 #from app.cmds import cmd_list
 
 
@@ -18,6 +18,8 @@ def register_extensions(app):
     hobbit.init_app(app, db)
     cors.init_app(app)
     jwt.init_app(app)
+    # photos.init_app(app)
+    configure_uploads(app, photos)  # 初始化
 
 
 def register_blueprints(app):

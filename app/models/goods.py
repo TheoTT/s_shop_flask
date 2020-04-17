@@ -5,30 +5,42 @@ from hobbit_core.db import Column, BaseModel, reference_col, SurrogatePK
 from sqlalchemy.orm import relationship, exc
 
 from app.exts import bcrypt, db
+from app.models.orders import goods_orders
 # from app.models import Role # (ORM之间的model不需要互相导入，可以直接使用)
 
 
 class Good(db.Model):
     __tablename__ = 'goods'
-    id = db.Column(db.Integer, primary_key = True)
+    id = Column(db.Integer, primary_key=True)
     good_name = Column(db.String(32), nullable=False, index=True)
+    good_desc = Column(db.String(200), nullable=True)
     good_price = Column(db.Float, nullable=False, default=1.0)
+    good_weight = Column(db.Float, nullable=False, default=1.0)
     good_number = Column(db.Integer, nullable=False, default=1)
-    good_state = Column(db.Boolean(), default=True, doc='1代表激活')
+    hot_number = Column(db.Integer, nullable=False, default=1)
+    good_state = Column(
+        db.Enum('ReviewFaild', 'UnderReview', 'Reviewed'),
+        default='UnderReview', doc='商品状态:未通过, 审核中, 已审核')
+    is_promote = Column(db.Boolean(), default=False, doc='False代表非热销商品')
+
     created_at = Column(db.Date, nullable=True, default=datetime.now)
     updated_at = Column(db.Date, nullable=True, default=datetime.now)
-    # parent_id = db.Column(db.Integer, db.ForeignKey('goods.id'))
-    # children = db.relationship('Good', back_populates='parent')
-    # parent = db.relationship('Good', back_populates='children', remote_side=[id])
 
-    # role_id = Column(db.Integer, db.ForeignKey('roles.id'))
-    # role = relationship('Role', backref=db.backref('menus', order_by=id))
-    # roles = relationship('Role', secondary=association_table, back_populates="menus")
-    # 将back_populates修改为db.backref() 指定 lazy = 'dynamic' 参数，关系两侧返回的查询都可接受额外的过滤器
-    # roles = relationship('Role', secondary=association_table, backref=db.backref("menus", lazy='dynamic'))
+    category_id = Column(db.Integer, db.ForeignKey('categories.id'))
+    category = relationship('Category', back_populates='goods')
+    photos = relationship('Photo', back_populates='good', lazy='dynamic')
+    orders = relationship('Order', secondary=goods_orders, back_populates="goods", lazy='dynamic')
 
-    def __init__(self, good_name, **kwargs):
-        db.Model.__init__(self, good_name=good_name, **kwargs)
+
+    def __init__(
+            self, good_name, good_price, good_weight, good_number,
+            good_desc, hot_number,
+            good_state, is_promote, **kwargs):
+        db.Model.__init__(
+            self, good_name=good_name, good_state=good_state,
+            good_price=good_price, good_number=good_number,
+            good_weight=good_weight, good_desc=good_desc,
+            hot_number=hot_number, is_promote=is_promote, **kwargs)
 
 
 class Attribute(db.Model):
@@ -63,6 +75,16 @@ class Attribute(db.Model):
             **kwargs)
 
 
+class Photo(db.Model):
+    __tablename__ = 'photos'
+    id = db.Column(db.Integer, primary_key=True)
+    photo_name = Column(db.String(500), nullable=False, index=True)
+    # photo_url = Column(db.Url(), nullable=False, index=True)
+    photo_url = Column(db.String(500), nullable=False, index=True)
+    good_id = Column(db.Integer, db.ForeignKey('goods.id'))
+    good = relationship('Good', back_populates='photos')
+
+
 class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
@@ -74,6 +96,7 @@ class Category(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     children = db.relationship('Category', back_populates='parent')
     attributes = db.relationship('Attribute', back_populates='category', lazy='dynamic')
+    goods = db.relationship('Good', back_populates='category', lazy='dynamic')
     parent = db.relationship('Category', back_populates='children', remote_side=[id])
     # parent = db.relationship('Category', backref=db.backref("children", lazy='dynamic'), remote_side=[id])
 
@@ -138,8 +161,7 @@ class Category(db.Model):
                     'updated_at': category_2.updated_at,
                     'created_at': category_2.created_at
                 }
-                children_1.append(item_2)
-            
+                children_1.append(item_2)          
             item_1 = {
                 'children_p': children_1,
                 'category_name': category_1.category_name,

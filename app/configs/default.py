@@ -20,3 +20,6 @@ JWT_AUTH_HEADER_PREFIX = 'JWT'
 JWT_EXPIRATION_DELTA = timedelta(days=30)
 JWT_ALGORITHM = 'HS256'
 JWT_REQUIRED_CLAIMS =  ['exp', 'iat', 'nbf']
+
+# 图片上传路径
+UPLOADED_PHOTOS_DEST = os.path.join(ROOT_PATH, 'uploads/')

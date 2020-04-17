@@ -9,16 +9,22 @@ from app.models import Good, Category, Attribute
 class GoodSchema(ModelSchema):
     # good_name = fields.Str(required=True, dump_only=True)
     good_name = fields.Str(required=True)
-    good_price = fields.Number(required=True)
-    good_number = fields.Number(required=True)
+    good_desc = fields.Str(required=False, default='')
+    good_price = fields.Number(required=True, default=0.0)
+    good_weight = fields.Number(required=True, default=0.0)
+    good_number = fields.Integer(required=True, default=0)
+    hot_number = fields.Integer(required=False, default=0)
+    good_state = fields.Str(required=False, default='审核中')
+    is_promote = fields.Boolean(required=False, default=False)
     # category = fields.Nested('self', many=True)
 
     class Meta:
         model = Good
         strict = True
         fields = (
-            'id', 'created_at', 'updated_at',
-            'good_name', 'good_price', 'good_number'
+            'id', 'created_at', 'updated_at', 'good_desc',
+            'good_name', 'good_price', 'good_number', 'good_weight',
+            'hot_number', 'good_state', 'is_promote'
         )
         load_only = ()
         dump_only = ()
@@ -31,18 +37,27 @@ class PagedGoodSchema(PagedSchema):
 class GoodCreateSchema(ModelSchema):
     # good_name = fields.Str(required=True, dump_only=True)
     good_name = fields.Str(required=True)
-    good_price = fields.Number(required=True)
-    good_number = fields.Number(required=True)
-    good_state = fields.Boolean(required=True)
+    good_price = fields.Number(required=False, missing=0.0)
+    good_number = fields.Number(required=False, missing=0)
+    good_state = fields.Str(required=False, missing='审核中')
+    good_weight = fields.Number(required=False, missing=0.0)
+    good_desc = fields.Str(required=False, default='')
+    category_id = fields.Int(required=True)
+    photos = fields.List(fields.Dict(), required=False, missing=[])
+    attributes = fields.List(fields.Dict(), required=False, missing=[])
+    hot_number = fields.Integer(required=False, default=0)
+    is_promote = fields.Boolean(required=False, default=False)
 
     class Meta(GoodSchema.Meta):
         model = Good
         strict = True
         fields = (
-            'id', 'created_at', 'updated_at',
-            'good_name', 'good_price', 'good_number', 'good_state', 'good_state'
+            'id', 'created_at', 'updated_at', 'good_weight',
+            'category_id', 'photos', 'attributes', 'good_name',
+            'good_price', 'good_number', 'good_state', 'good_state',
+            'good_desc', 'hot_number', 'is_promote'
         )
-        dump_only = tuple(set(fields) - {'good_name', 'good_price', 'good_number', 'good_state'})
+        # dump_only = tuple(set(fields) - {'good_name', 'good_price', 'good_number', 'good_state'})
 
 
 class CategorySchema(ModelSchema):
@@ -56,6 +71,7 @@ class CategorySchema(ModelSchema):
     # TODO: 优化自引用过滤
     children_f = fields.Nested('self', many=True)
     children_p = fields.Nested('self', many=True)
+    attributes = fields.Nested('AttributeSchema', many=True, only=['attribute_name', 'attribute_values'])
     # name = fields.Method('get_children')
 
     class Meta:
@@ -63,7 +79,7 @@ class CategorySchema(ModelSchema):
         strict = True
         fields = (
             'id', 'created_at', 'updated_at', 'children_f', 'children_p',
-            'category_name', 'category_level', 'children', 'category_desc'
+            'category_name', 'category_level', 'children', 'category_desc', 'attributes'
         )
         load_only = ()
         dump_only = ()

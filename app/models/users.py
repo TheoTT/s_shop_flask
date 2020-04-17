@@ -24,6 +24,7 @@ class User(db.Model):
     del_flag = Column(db.Integer(), default=0, doc='0代表未删除')
     role_id = Column(db.Integer, db.ForeignKey('roles.id'))
     role = relationship('Role', backref=db.backref('users', order_by=username))
+    orders = db.relationship('Order', back_populates='user', lazy='dynamic')
 
     def __init__(self, username, email, password=None, **kwargs):
         db.Model.__init__(self, username=username, email=email, **kwargs)

@@ -12,9 +12,9 @@ from hobbit_core.db import transaction
 from hobbit_core.pagination import PageParams, pagination
 
 # from app.models import Menu, SubMenu  # NOQA
-from app.models import Good, Category, Attribute # NOQA
+from app.models import Good, Category, Attribute, Photo # NOQA
 from app import schemas  # NOQA
-from app.exts import db
+from app.exts import db, photos
 
 
 bp = Blueprint('goods', __name__)
@@ -22,9 +22,12 @@ bp = Blueprint('goods', __name__)
 
 @bp.route('/goods/', methods=['GET'])
 @use_kwargs(PageParams)
+@use_kwargs({'keyword': fields.Str(required=False)})
 @jwt_required()
-def list(page, page_size, order_by):
+def list(page, page_size, order_by, keyword):
     qexp = Good.query
+    if keyword:
+        qexp = qexp.filter(Good.good_name.like(f'%{keyword}%'))
     paged_ret = pagination(Good, page, page_size, order_by, query_exp=qexp)
     return jsonify(schemas.paged_good_schemas.dump(paged_ret))
 
@@ -40,15 +43,35 @@ def list(page, page_size, order_by):
 @use_kwargs(schemas.good_create_schema)
 @jwt_required()
 @transaction(db.session)
-def create(good_name, good_state, good_price, good_number):
+def create(
+        good_name, good_price, good_weight, good_number,
+        category_id, photos, good_desc,attributes, hot_number,
+        good_state, is_promote
+    ):
     if Good.query.filter(or_(
             Good.good_name == good_name)).first():
         return ValidationErrorResult(message='Good已存在')
     good = Good(
-        good_name=good_name, good_state=good_state, good_price=good_price, good_number=good_number)
+        good_name=good_name, good_state=good_state,
+        good_price=good_price, good_number=good_number,
+        good_weight=good_weight, good_desc=good_desc,
+        hot_number=hot_number, is_promote=is_promote)
+
+    category = Category.query.filter(Category.id == category_id).one()
+    if category:
+        category.goods.append(good)
+        good.category_id = category_id
+    if photos:
+        for photo in photos:
+            ph = Photo(photo_name=photo['photo_name'], photo_url=photo['photo_url'])
+            good.photos.append(ph)
+    if attributes:
+        for attribute in attributes:
+            attr = Attribute.query.filter(Attribute.id == attribute['id']).one()
+            if attr:
+                attr.attribute_values = attribute['attribute_values']
     db.session.add(good)
     db.session.flush()
-
     return jsonify(schemas.good_schema.dump(good)), 201
 
 
@@ -274,3 +297,16 @@ def category_attributes(pk, page, page_size, order_by, attribute_sel=None):
     # qexp = Category.query.filter(Category.category_level.in_(range(type)))
     paged_ret = pagination(Attribute, page, page_size, order_by, query_exp=qexp)
     return jsonify(schemas.paged_attribute_schemas.dump(paged_ret))
+
+
+@bp.route('/goods/upload/', methods=['POST'])
+@jwt_required()
+# @use_kwargs({'type': fields.List(fields.Integer(), required=False)})
+@use_kwargs({'photo': fields.Field(required=True, location='files')})
+def uploads(photo):
+    photo_name = photos.save(photo)
+    photo_url = photos.url(photo_name)
+    return jsonify({
+        'photo_url': photo_url,
+        'photo_name': photo_name
+    })
